@@ -50,10 +50,10 @@ async function handleTranslateAndSpeak() {
   }
 }
 
-async function handleSaveWord() {
+async function handleSaveWord(event) {
   const lang = document.getElementById("language").value;
   const word = document.getElementById("inputText").value;
-  const saveButton = event.target; // Get the button element
+  const saveButton = event.currentTarget; // Get the button element
 
   if (!word.trim()) {
       alert("Please enter a word to save.");
@@ -104,9 +104,28 @@ async function loadLearnedWords() {
   }
 }
 
+// Attach listener for the translate button
+const translateButton = document.getElementById('translateButton');
+if (translateButton) {
+  translateButton.addEventListener('click', debounce(handleTranslateAndSpeak, 500));
+} else {
+   console.error("Translate button not found!"); // Add an error check
+}
+
+// Attach listener for the save button (similar pattern, ensures it works with modules)
+const saveButton = document.querySelector('button:nth-of-type(2)'); // Or give it an ID like the translate button
+if (saveButton) {
+    // We need to slightly adjust how handleSaveWord gets the event target
+    // Pass the event object to the debounced handler
+     const debouncedSaveHandler = debounce((event) => handleSaveWord(event), 1000); 
+     saveButton.addEventListener('click', debouncedSaveHandler);
+     // Remove the window.saveWord assignment below if you add this listener
+} else {
+    console.error("Save button not found!");
+}
 // Assign debounced handlers to window object for HTML onclick
-window.translateAndSpeak = debounce(handleTranslateAndSpeak, 500); 
-window.saveWord = debounce(handleSaveWord, 1000); // Longer debounce for save to prevent rapid API calls
+//window.translateAndSpeak = debounce(handleTranslateAndSpeak, 500); 
+//window.saveWord = debounce(handleSaveWord, 1000); // Longer debounce for save to prevent rapid API calls
 
 // Initial load and language change listener
 document.getElementById("language").addEventListener("change", loadLearnedWords);

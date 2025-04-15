@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <link rel="icon" href="data:,">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Shashi Language Learn</title>
   <link rel="stylesheet" href="style.css">
@@ -16,8 +17,8 @@
     </select>
     
     <input type="text" id="inputText" placeholder="Enter word or sentence..." />
-    <button onclick="translateAndSpeak()">Translate & Speak</button>
-    <button onclick="saveWord()">I learnt this!</button>
+    <button id="translateButton">Translate & Speak</button>
+    <button id="saveWord">I learnt this!</button>
     
     <h2>Translation:</h2>
     <p id="translatedText"></p>
