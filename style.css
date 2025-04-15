@@ -1,0 +1,35 @@
+body {
+  font-family: Comic Sans MS, sans-serif;
+  background: #fdf6e3;
+  text-align: center;
+  padding: 2rem;
+}
+
+h1 {
+  font-size: 2.5rem;
+  color: #007acc;
+}
+
+.app {
+  background: #fff;
+  margin: auto;
+  padding: 1rem;
+  border-radius: 1rem;
+  width: 90%;
+  max-width: 600px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+input, select, button {
+  padding: 1rem;
+  margin: 0.5rem;
+  font-size: 1.2rem;
+}
+
+button {
+  background: #00c853;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
