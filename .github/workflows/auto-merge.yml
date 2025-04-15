@@ -1,15 +1,13 @@
-name: Auto Merge Learned Words
+name: Auto Merge PRs
 
 on:
-  push:
-    paths:
-      - 'learned/**.json'
+  pull_request:
+    types: [opened, synchronize, labeled]
 
 jobs:
-  auto-merge:
+  automerge:
     runs-on: ubuntu-latest
     steps:
-      - name: Auto approve and merge
-        uses: pascalgn/automerge-action@v0.15.5
+      - uses: pascalgn/automerge-action@v0.15.5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

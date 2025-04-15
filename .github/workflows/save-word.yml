@@ -55,8 +55,3 @@ jobs:
           title: "Learned: ${{ steps.extract.outputs.word }}"
           body: "Automatically adding learned word."
           base: main
-
-      - name: Auto-merge PR
-        uses: pascalgn/automerge-action@v0.15.5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
