@@ -398,10 +398,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(`Translation API error! status: ${response.status}`);
             }
             const data = await response.json();
-            console.log("Full API Response:", JSON.stringify(data));
+            // --- Optional Debugging line ---
+            // console.log("Full API Response:", JSON.stringify(data));
+            // ---
+            // Extract translation (confirmed at data[0][0][0])
             const translated = data?.[0]?.[0]?.[0] || "Translation failed";
 
-            let phonetic = data?.[0]?.[2]?.[0] || data?.[0]?.[2]?.[2] || data?.[0]?.[2]?.[3] || null;
+            // **** Extract phonetic/romanization using the CORRECT index found in the log ****
+            let phonetic = data?.[0]?.[1]?.[2] || null; // Use index [0][1][2]
 
             // Sometimes the phonetic might be the same as the source if no transliteration exists
             if (phonetic === text || phonetic === translated) {
