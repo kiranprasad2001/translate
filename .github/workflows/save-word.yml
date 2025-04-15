@@ -75,12 +75,13 @@ jobs:
           # Add the object using jq (same logic as before)
           jq  --arg eng "$ENGLISH_WORD" \
               --arg tgt "$TARGET_WORD" \
-              'if (.words | map(.target) | index($tgt)) == null then .words += [{"english": $eng, "target": $tgt}] else . end' \
-              "$FILE" > tmp.$$.json && mv tmp.$$.json "$FILE"
+              --arg pho "$PHONETIC_WORD" \
+              'if (.words | map(.target) | index($tgt)) == null then .words += [{"english": $eng, "target": $tgt, "phonetic": $pho}] else . end' \
+             "$FILE" > tmp.$$.json && mv tmp.$$.json "$FILE"
 
           echo "JSON file updated."
           git add "$FILE"
-          git commit -m "Add learned pair: ${ENGLISH_WORD} / ${TARGET_WORD} (${{ steps.extract.outputs.lang }})"
+          git commit -m "Add learned pair: ${ENGLISH_WORD} / ${TARGET_WORD} / ${PHONETIC_WORD} (${{ steps.extract.outputs.lang }})"
           git push origin ${{ steps.extract.outputs.branch }}
         shell: bash
 
