@@ -64,7 +64,7 @@ jobs:
           git checkout -b ${{ steps.extract.outputs.branch }}
         shell: bash
 
-      - name: Update learned words JSON # **** MODIFIED STEP ****
+      - name: Update learned words JSON # **** MODIFIED STEP (Added Debugging) ****
         run: |
           FILE="data/learned_${{ steps.extract.outputs.lang }}.json"
           ENGLISH_WORD="${{ steps.extract.outputs.english_word }}"
@@ -74,23 +74,39 @@ jobs:
           echo "English Word: $ENGLISH_WORD"
           echo "Target Word: $TARGET_WORD"
 
-          # Create directory and default file if they don't exist
           mkdir -p data
           if [ ! -f "$FILE" ]; then
             echo '{"words":[]}' > "$FILE"
             echo "Created initial file $FILE"
           fi
 
-          # Use jq to add the object {english, target} if target word is not already present
-          # Checks if any object in the .words array has a .target property equal to TARGET_WORD
+          # ---- START DEBUG ----
+          echo "--- File content BEFORE jq ---"
+          cat "$FILE" || echo "File not found or empty before jq"
+          echo "--- End File content BEFORE jq ---"
+          # ---- END DEBUG ----
+
           jq --arg eng "$ENGLISH_WORD" --arg tgt "$TARGET_WORD" \
              'if (.words | map(.target) | index($tgt)) == null then .words += [{"english": $eng, "target": $tgt}] else . end' \
              "$FILE" > tmp.$$.json && mv tmp.$$.json "$FILE"
 
-          echo "JSON file updated."
-          git status # Show status for debugging
+          # ---- START DEBUG ----
+          echo "--- File content AFTER jq ---"
+          cat "$FILE" || echo "File not found or empty after jq"
+          echo "--- End File content AFTER jq ---"
+          echo "--- Git status BEFORE add ---"
+          git status
+          echo "--- End Git status BEFORE add ---"
+          # ---- END DEBUG ----
+
           git add "$FILE"
-          # Update commit message to include pair
+
+          # ---- START DEBUG ----
+          echo "--- Git status AFTER add ---"
+          git status
+          echo "--- End Git status AFTER add ---"
+          # ---- END DEBUG ----
+
           git commit -m "Add learned pair: ${ENGLISH_WORD} / ${TARGET_WORD} (${{ steps.extract.outputs.lang }})"
           git push origin ${{ steps.extract.outputs.branch }}
         shell: bash
