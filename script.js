@@ -200,20 +200,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayLearnedWords() {
-        learnedWordsList.innerHTML = '';
+        learnedWordsList.innerHTML = ''; // Clear previous list
         if (learnedWords.length === 0) {
             learnedWordsList.innerHTML = '<p>No words learned for this language yet!</p>';
             return;
         }
+  
         learnedWords.forEach(pair => {
-            const wordElement = document.createElement('span');
-            // Display the pair: English -> Target
-            wordElement.textContent = `${pair.english} → ${pair.target}`;
-            wordElement.classList.add('learned-word-pair'); // Use a different class maybe?
-            wordElement.title = `Click to hear "${pair.target}"`; // Tooltip clarifies what will be spoken
-            // Make clicking speak the TARGET word
-            wordElement.addEventListener('click', () => speakWord(pair.target));
-            learnedWordsList.appendChild(wordElement);
+            // Create a container div for the pair (the "card")
+            const pairCard = document.createElement('div');
+            pairCard.classList.add('learned-pair-card'); // New class for the card
+  
+            // Create element for the English word
+            const englishElement = document.createElement('span');
+            englishElement.textContent = pair.english;
+            englishElement.classList.add('english-word'); // Class for styling English word
+  
+            // Create element for the Target word
+            const targetElement = document.createElement('span');
+            targetElement.textContent = pair.target;
+            targetElement.classList.add('target-word'); // Class for styling Target word
+            targetElement.title = `Click to hear "${pair.target}"`; // Tooltip
+  
+            // Append English and Target words to the card
+            pairCard.appendChild(englishElement);
+            pairCard.appendChild(targetElement);
+  
+            // Add click listener to the CARD to speak the TARGET word
+            pairCard.addEventListener('click', () => speakWord(pair.target));
+  
+            // Append the card to the list container
+            learnedWordsList.appendChild(pairCard);
         });
     }
 

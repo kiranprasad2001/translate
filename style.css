@@ -318,3 +318,65 @@ em {
   }
 
 }
+
+/* --- Styling for Learned Word Pairs --- */
+
+.word-list {
+  /* Keep existing flexbox/grid settings if desired for overall layout */
+  /* For example: */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px; /* Increased gap slightly */
+  justify-content: center; /* Or 'flex-start' if you prefer left-align */
+  /* Keep max-height, overflow etc. */
+  margin-top: 10px;
+  padding: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out;
+  opacity: 1;
+}
+
+.word-list.hidden {
+  /* Keep existing hidden styles */
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  padding: 0 10px;
+  margin-top: 0;
+}
+
+/* Styles for the new card container for each pair */
+.learned-pair-card {
+  display: flex; /* Use flexbox internally for stacking */
+  flex-direction: column; /* Stack items vertically */
+  align-items: center; /* Center text within the card */
+  background-color: #e6f7ff; /* Light blue background */
+  border: 1px solid #91d5ff; /* Slightly darker blue border */
+  border-radius: 10px; /* Rounded corners */
+  padding: 10px 15px;
+  min-width: 100px; /* Ensure cards have some minimum width */
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.learned-pair-card:hover {
+  transform: translateY(-2px); /* Slight lift on hover */
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Increase shadow */
+}
+
+/* Style for the English word inside the card */
+.english-word {
+  font-size: 0.9em;
+  color: #555; /* Darker grey for English */
+  margin-bottom: 3px; /* Space between English and Target */
+}
+
+/* Style for the Target (translated) word inside the card */
+.target-word {
+  font-size: 1.2em;
+  font-weight: 500; /* Make target word slightly bolder */
+  color: #0050b3; /* Darker blue for target */
+}
