@@ -2,7 +2,7 @@
 
 A simple, fun website hosted on GitHub Pages for kids (especially kindergarteners) to learn words in different languages using Text-to-Speech.
 
-**Live Site:** [https://learn.spotrot.com](https://learn.spotrot.com) (Replace with your actual URL)
+**Live Site:** [https://translate.spotrot.com](https://translate.spotrot.com)
 
 ## Features
 
@@ -26,14 +26,17 @@ This site uses a secure method to save learned words without exposing sensitive 
     *   Find the file corresponding to the language (e.g., `learned_fr.json` for French).
     *   Edit the file (you can do this directly on GitHub).
     *   Add the new learned word as a string inside the `"words": []` array. Ensure the JSON format remains valid (comma-separated strings within the square brackets).
-    *   **Example:** If adding "chat" to `learned_fr.json` which already contains `["bonjour"]`:
+    *   **Example:** If adding "chat" to `learned_ch.json` which already contains `["hi"]`:
         ```json
         {
-          "words": [
-            "bonjour",
-            "chat"
-          ]
-        }
+           "words": [
+             {
+               "english": "hi",
+               "target": "你好",
+               "phonetic": "Nǐ hǎo"
+             }
+           ]
+         }
         ```
 5.  **Commit Changes:** Commit the changes directly to the `main` branch.
 6.  **Automatic Update:** GitHub Pages will automatically detect the change and redeploy the site (usually within 1-2 minutes). The newly learned word will then appear in the "Words I Already Know!" list on the website after a refresh.
