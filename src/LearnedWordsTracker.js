@@ -1,0 +1,1 @@
+// LearnedWordsTracker.js placeholder content

@@ -1,0 +1,1 @@
+// Translator.js placeholder content
