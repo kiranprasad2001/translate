@@ -2,52 +2,43 @@ name: Auto Save & Merge Learned Word Pair
 
 on:
   issues:
-    types: [opened] # Trigger only when an issue is opened
+    types: [opened]
 
 jobs:
-  save-word-pair: # Renamed job for clarity
+  save-word-pair:
     runs-on: ubuntu-latest
-    # Grant permissions to write contents (for commit/push) and pull requests (for creating PR)
     permissions:
       contents: write
-      pull-requests: write
+      pull-requests: write # Still needed for gh pr create
 
     steps:
       - name: Checkout repository code
-        uses: actions/checkout@v4 # Use a newer version of checkout
+        uses: actions/checkout@v4
 
       - name: Setup Git User
         run: |
-          git config --global user.name 'github-actions[bot]' # Standard bot user name
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com' # Standard bot email
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
-      - name: Install jq # **** ADDED STEP ****
+      - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Extract word pair & language from issue # **** MODIFIED STEP ****
+      - name: Extract word pair & language from issue
         id: extract
         run: |
           TITLE="${{ github.event.issue.title }}"
-          # Ensure body handles potential carriage returns
           BODY=$(echo "${{ github.event.issue.body }}" | tr -d '\r')
-
-          # Extract language code from parentheses in title (e.g., (ch) -> ch)
           LANG=$(echo "$TITLE" | grep -oP '\(\K[^)]+')
-          # Extract English word from body line: English: **word**
           ENGLISH_WORD=$(echo "$BODY" | grep -oP 'English: \*\*\K[^*]+')
-          # Extract Target word from body line: Target (...): **word**
           TARGET_WORD=$(echo "$BODY" | grep -oP 'Target \([^)]+\): \*\*\K[^*]+')
-
-          # Create a safe branch name based on target word + random number
           SAFE_TARGET_WORD=$(echo "$TARGET_WORD" | tr -cd '[:alnum:]_' | cut -c1-20)
-          BRANCH="learned-${SAFE_TARGET_WORD:-word}-${RANDOM}" # Fallback if target word extraction fails
+          BRANCH="learned-${SAFE_TARGET_WORD:-word}-${RANDOM}"
 
           echo "Extracted Lang: $LANG"
           echo "Extracted English: $ENGLISH_WORD"
           echo "Extracted Target: $TARGET_WORD"
           echo "Branch Name: $BRANCH"
 
-          # Check if extractions were successful
           if [ -z "$LANG" ] || [ -z "$ENGLISH_WORD" ] || [ -z "$TARGET_WORD" ]; then
             echo "Error: Failed to extract required information from issue title/body."
             exit 1
@@ -57,70 +48,48 @@ jobs:
           echo "english_word=$ENGLISH_WORD" >> $GITHUB_OUTPUT
           echo "target_word=$TARGET_WORD" >> $GITHUB_OUTPUT
           echo "branch=$BRANCH" >> $GITHUB_OUTPUT
-        shell: bash # Explicitly use bash
+        shell: bash
 
       - name: Create and switch to new branch
         run: |
           git checkout -b ${{ steps.extract.outputs.branch }}
         shell: bash
 
-      - name: Update learned words JSON # **** MODIFIED STEP (Added Debugging) ****
+      - name: Update learned words JSON
         run: |
           FILE="data/learned_${{ steps.extract.outputs.lang }}.json"
           ENGLISH_WORD="${{ steps.extract.outputs.english_word }}"
           TARGET_WORD="${{ steps.extract.outputs.target_word }}"
 
           echo "Updating file: $FILE"
-          echo "English Word: $ENGLISH_WORD"
-          echo "Target Word: $TARGET_WORD"
-
           mkdir -p data
           if [ ! -f "$FILE" ]; then
             echo '{"words":[]}' > "$FILE"
             echo "Created initial file $FILE"
           fi
 
-          # ---- START DEBUG ----
-          echo "--- File content BEFORE jq ---"
-          cat "$FILE" || echo "File not found or empty before jq"
-          echo "--- End File content BEFORE jq ---"
-          # ---- END DEBUG ----
-
+          # Add the object using jq (same logic as before)
           jq --arg eng "$ENGLISH_WORD" --arg tgt "$TARGET_WORD" \
              'if (.words | map(.target) | index($tgt)) == null then .words += [{"english": $eng, "target": $tgt}] else . end' \
              "$FILE" > tmp.$$.json && mv tmp.$$.json "$FILE"
 
-          # ---- START DEBUG ----
-          echo "--- File content AFTER jq ---"
-          cat "$FILE" || echo "File not found or empty after jq"
-          echo "--- End File content AFTER jq ---"
-          echo "--- Git status BEFORE add ---"
-          git status
-          echo "--- End Git status BEFORE add ---"
-          # ---- END DEBUG ----
-
+          echo "JSON file updated."
           git add "$FILE"
-
-          # ---- START DEBUG ----
-          echo "--- Git status AFTER add ---"
-          git status
-          echo "--- End Git status AFTER add ---"
-          # ---- END DEBUG ----
-
           git commit -m "Add learned pair: ${ENGLISH_WORD} / ${TARGET_WORD} (${{ steps.extract.outputs.lang }})"
           git push origin ${{ steps.extract.outputs.branch }}
         shell: bash
 
-      - name: Create Pull Request # **** MODIFIED STEP (title) ****
-        id: cpr
-        uses: peter-evans/create-pull-request@v6 # Use latest version
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "Add learned pair: ${{ steps.extract.outputs.english_word }} / ${{ steps.extract.outputs.target_word }}"
-          branch: ${{ steps.extract.outputs.branch }}
-          # Update PR title
-          title: "Learned: ${{ steps.extract.outputs.english_word }} / ${{ steps.extract.outputs.target_word }} (${{ steps.extract.outputs.lang }})"
-          body: "Automatically adding learned word pair triggered by issue #${{ github.event.issue.number }}."
-          base: main # Or your default branch
-          labels: learned-word, automated-pr # Optional: add labels
-          delete-branch: true # Optional: delete branch after merge/close
+      # **** REPLACED create-pull-request ACTION WITH gh CLI ****
+      - name: Create Pull Request using GitHub CLI
+        env:
+          # The GITHUB_TOKEN is automatically available to the gh CLI
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Creating PR for branch: ${{ steps.extract.outputs.branch }}"
+          gh pr create \
+            --base "main" \
+            --head "${{ steps.extract.outputs.branch }}" \
+            --title "Learned: ${{ steps.extract.outputs.english_word }} / ${{ steps.extract.outputs.target_word }} (${{ steps.extract.outputs.lang }})" \
+            --body "Automatically adding learned word pair triggered by issue #${{ github.event.issue.number }}. Please review and merge." \
+            --label "learned-word,automated-pr"
+        shell: bash
