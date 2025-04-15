@@ -1,3 +1,9 @@
 {
-  "words": []
+  "words": [
+    {
+      "english": "hi",
+      "target": "你好",
+      "phonetic": "Nǐ hǎo"
+    }
+  ]
 }
