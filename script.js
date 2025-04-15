@@ -125,10 +125,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return wordsArray.map(item => {
                 if (typeof item === 'string') {
                     // Old format detected: create an object, assuming the string is the target word
-                    return { english: "(loaded string)", target: item };
+                    return { english: "(loaded string)", target: item, phonetic: null };
                 } else if (typeof item === 'object' && item !== null && item.hasOwnProperty('target')) {
                     // New format detected (or partially new), ensure 'english' exists
-                    return { english: item.english || "(missing english)", target: item.target };
+                    return { 
+                        english: item.english || "(missing english)", 
+                        target: item.target,
+                        phonetic: item.phonetic || null // Ensure phonetic is present
+                    };
                 } else {
                     // Invalid item format
                      console.warn("Invalid item format in loaded JSON:", item);
@@ -141,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
+    // Load language data based on the selected language
     async function loadLanguageData(langKey) {
         // (Load language data remains mostly the same, but uses the updated loadJsonData)
         const langInfo = languageMap[langKey];
@@ -243,20 +247,17 @@ document.addEventListener('DOMContentLoaded', () => {
             targetElement.classList.add('target-word'); // Class for styling Target word
             targetElement.title = `Click to hear "${pair.target}"`; // Tooltip
 
-            let phoneticCardElement = null; // Define variable outside the if scope
+            // Append English and Target first
+            pairCard.appendChild(englishElement); // English first
+            pairCard.appendChild(targetElement); // Then target word
+            // Create element for the Phonetic word if it exists
+            //let phoneticCardElement = null; // Initialize to null
             if (pair.phonetic) {
                 const phoneticCardElement = document.createElement('span');
                 phoneticCardElement.textContent = pair.phonetic;
                 phoneticCardElement.classList.add('phonetic-word-card'); // Add a class for styling
-                //pairCard.appendChild(phoneticCardElement); // Add below target
+                pairCard.appendChild(phoneticCardElement); // Add below target
            }
-  
-            // Append elements to the card in desired order
-            pairCard.appendChild(englishElement); // English first
-            pairCard.appendChild(targetElement);  // Then target word
-            if (phoneticCardElement) {           // If the phonetic element was created...
-                pairCard.appendChild(phoneticCardElement); // ...append it AFTER the target word
-            }
   
             // Add click listener to the CARD to speak the TARGET word
             pairCard.addEventListener('click', () => speakWord(pair.target));
