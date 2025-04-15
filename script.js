@@ -15,6 +15,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const learnedWordsList = document.getElementById('learned-words-list');
   const toggleLearnedBtn = document.getElementById('toggle-learned-btn');
 
+  const translateInput = document.getElementById('text-to-translate');
+  const translateAndSpeakBtn = document.getElementById('translate-and-speak-btn');
+
+
   let currentLanguage = languageSelect.value;
   let currentSuggestion = null;
   let suggestionWords = [];
@@ -292,6 +296,26 @@ After editing the file, commit the change and push it to the main branch. The we
           toggleLearnedBtn.textContent = 'Hide';
       }
   });
+
+  translateAndSpeakBtn.addEventListener('click', async () => {
+    const text = translateInput.value.trim();
+    if (!text) return;
+  
+    const targetLangCode = languageMap[currentLanguage]?.code || 'fr';
+  
+    try {
+      const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLangCode}&dt=t&q=${encodeURIComponent(text)}`);
+      const data = await res.json();
+      const translated = data[0]?.[0]?.[0] || "Translation failed";
+  
+      currentWordDisplay.textContent = translated;
+      speak(translated, targetLangCode, languageMap[currentLanguage].voiceName);
+    } catch (err) {
+      console.error("Translation failed", err);
+      currentWordDisplay.textContent = "Translation failed";
+    }
+  });
+  
 
   // --- Initialisation ---
   function initialize() {
