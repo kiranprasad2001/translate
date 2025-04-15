@@ -3,6 +3,10 @@
     {
       "english": "hi",
       "target": "你好"
+    },
+    {
+      "english": "bye",
+      "target": "再见"
     }
   ]
 }
