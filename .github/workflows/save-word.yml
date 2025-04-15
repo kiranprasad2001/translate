@@ -82,8 +82,8 @@ jobs:
       # **** REPLACED create-pull-request ACTION WITH gh CLI ****
       - name: Create Pull Request using GitHub CLI
         env:
-          # The GITHUB_TOKEN is automatically available to the gh CLI
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # **** USE THE REPOSITORY SECRET INSTEAD OF THE DEFAULT TOKEN ****
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           echo "Creating PR for branch: ${{ steps.extract.outputs.branch }}"
           gh pr create \
