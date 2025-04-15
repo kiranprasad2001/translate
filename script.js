@@ -1,9 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- Configuration ---
-    // *** IMPORTANT: Replace with your actual GitHub username and repo name ***
     const GITHUB_USER = 'kiranprasad2001'; // Replace if needed
     const GITHUB_REPO = 'translate';      // Replace if needed
-    // ***
 
     // --- Element References ---
     const languageSelect = document.getElementById('language-select');
@@ -21,9 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- State Variables ---
     let currentLanguage = languageSelect.value;
-    let currentSuggestion = null;
-    let suggestionWords = [];
-    let learnedWords = [];
+    let currentSuggestion = null; // Will hold the target language word for suggestions
+    let suggestionWords = []; // Array of target language suggestion words
+    let learnedWords = []; // Will store objects: { english: "...", target: "..." }
     let synth = window.speechSynthesis;
     let voices = [];
 
@@ -33,14 +31,12 @@ document.addEventListener('DOMContentLoaded', () => {
         'fr': { code: 'fr-FR', voiceName: 'Google Français', filePrefix: 'fr' },
         'es': { code: 'es-ES', voiceName: 'Google Español', filePrefix: 'es' },
         'de': { code: 'de-DE', voiceName: 'Google Deutsch', filePrefix: 'de' },
-        // Add more languages here if needed
     };
 
     // --- Core Functions ---
 
     function populateVoiceList() {
         voices = synth.getVoices();
-        // console.log("Available voices:", voices); // For debugging
     }
 
     populateVoiceList();
@@ -49,15 +45,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function speak(text, langCode, voiceNameHint) {
+        // (Speak function remains the same as before)
         if (!synth) {
             alert('Sorry, your browser does not support Text-to-Speech.');
             return;
         }
         if (synth.speaking) {
             console.log('SpeechSynthesis currently speaking, cancelling previous utterance.');
-             synth.cancel(); // Stop current speech before starting new one
+             synth.cancel();
         }
-        if (text && text.trim() !== '') {
+        if (text && text.trim() !== '' && text !== '-') { // Added check for '-' placeholder
             const utterThis = new SpeechSynthesisUtterance(text);
             utterThis.onend = function (event) {
                 console.log('SpeechSynthesisUtterance.onend');
@@ -79,16 +76,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
             utterThis.lang = langCode;
             utterThis.pitch = 1;
-            utterThis.rate = 0.7; // Slow rate
+            utterThis.rate = 0.7;
             utterThis.volume = 1;
 
             synth.speak(utterThis);
         } else {
-             console.warn("Speak function called with empty text.");
+             console.warn("Speak function called with invalid text:", text);
         }
     }
 
     async function loadJsonData(filePath) {
+        // Load data - expects format like { "words": ["word1", ...] } OR { "words": [{ "english": "...", "target": "..."}, ...]}
+        // We'll adapt to whichever format the file currently uses for backwards compatibility,
+        // but new saves will use the object format.
         try {
             const response = await fetch(`${filePath}?cachebust=${new Date().getTime()}`);
             if (!response.ok) {
@@ -99,37 +99,59 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
-             // Ensure data structure has 'words' array, default to empty array if missing or not an array
-             return Array.isArray(data?.words) ? data.words : [];
+            // Process loaded words: If they are strings, convert them to the new object format for consistency internally.
+            // If they are already objects, use them as is.
+            const wordsArray = Array.isArray(data?.words) ? data.words : [];
+            return wordsArray.map(item => {
+                if (typeof item === 'string') {
+                    // Old format detected: create an object, assuming the string is the target word
+                    return { english: "(loaded string)", target: item };
+                } else if (typeof item === 'object' && item !== null && item.hasOwnProperty('target')) {
+                    // New format detected (or partially new), ensure 'english' exists
+                    return { english: item.english || "(missing english)", target: item.target };
+                } else {
+                    // Invalid item format
+                     console.warn("Invalid item format in loaded JSON:", item);
+                     return null; // Filter this out later
+                }
+            }).filter(item => item !== null); // Remove any invalid items
         } catch (error) {
             console.error(`Error loading or parsing data from ${filePath}:`, error);
-            return []; // Return empty on any error
+            return [];
         }
     }
 
+
     async function loadLanguageData(langKey) {
+        // (Load language data remains mostly the same, but uses the updated loadJsonData)
         const langInfo = languageMap[langKey];
         if (!langInfo) {
             console.error(`Language key "${langKey}" not found in languageMap.`);
             suggestionWords = [];
             learnedWords = [];
-            // Update UI to reflect error or lack of data
             suggestionWordDisplay.textContent = 'Language Error!';
             learnedWordsList.innerHTML = '<p>Invalid language selected.</p>';
             return;
         }
+        // Suggestion words are still expected as simple strings in their JSON file (e.g., data/words_fr.json)
         const suggestionFilePath = `data/words_${langInfo.filePrefix}.json`;
+        // Learned words file might contain strings (old) or objects (new)
         const learnedFilePath = `data/learned_${langInfo.filePrefix}.json`;
 
         suggestionWordDisplay.textContent = 'Loading...';
         learnedWordsList.innerHTML = '<div class="loader"></div> Loading learned words...';
 
         try {
-            [suggestionWords, learnedWords] = await Promise.all([
-                loadJsonData(suggestionFilePath),
-                loadJsonData(learnedFilePath)
-            ]);
-            console.log(`Loaded ${suggestionWords.length} suggestions and ${learnedWords.length} learned words for ${langKey}`);
+            // Load suggestions (still expecting strings)
+             const suggestionData = await loadJsonData(suggestionFilePath);
+             // Ensure suggestions are strings, filter out any potential objects if format is mixed
+             suggestionWords = suggestionData.map(item => typeof item === 'object' ? item.target : item).filter(item => typeof item === 'string');
+
+             // Load learned words (using the updated loadJsonData that handles objects)
+            learnedWords = await loadJsonData(learnedFilePath);
+
+            console.log(`Loaded ${suggestionWords.length} suggestions.`);
+            console.log(`Loaded ${learnedWords.length} learned word pairs (or converted strings).`);
         } catch (error) {
             console.error(`Failed to load language data for ${langKey}:`, error);
             suggestionWords = [];
@@ -138,43 +160,43 @@ document.addEventListener('DOMContentLoaded', () => {
             learnedWordsList.innerHTML = `<p style="color: red;">Could not load data.</p>`;
         }
 
-        displayLearnedWords();
-        getNewSuggestion(); // Get the first suggestion for the new language
+        displayLearnedWords(); // Display the learned pairs
+        getNewSuggestion(); // Get the first suggestion
     }
 
     function getNewSuggestion() {
-        const availableSuggestions = suggestionWords.filter(word => !learnedWords.includes(word));
+        // Filter suggestions: Find suggestion words (strings) that are NOT the 'target' part of any learned word object
+        const learnedTargetWords = learnedWords.map(pair => pair.target);
+        const availableSuggestions = suggestionWords.filter(word => !learnedTargetWords.includes(word));
 
-        if (availableSuggestions.length === 0) {
-            if (suggestionWords.length > 0 && suggestionWords.every(word => learnedWords.includes(word))) {
-                 suggestionWordDisplay.textContent = "Wow! You learned all the words! 🎉";
+        // (Rest of the logic for handling suggestions remains the same)
+         if (availableSuggestions.length === 0) {
+            if (suggestionWords.length > 0 && suggestionWords.every(word => learnedTargetWords.includes(word))) {
+                 suggestionWordDisplay.textContent = "Wow! You learned all the suggestion words! 🎉";
             } else {
-                suggestionWordDisplay.textContent = "No suggestion words found!";
+                suggestionWordDisplay.textContent = "No suggestion words found or left!";
             }
             currentSuggestion = null;
-            currentWordDisplay.textContent = '-'; // Clear translation display too
-            // Disable buttons
+            currentWordDisplay.textContent = '-';
             iLearntThisBtn.disabled = true;
-            learntTranslatedBtn.disabled = true; // Also disable this one
+            learntTranslatedBtn.disabled = true;
             speakSuggestionBtn.disabled = true;
             speakAgainBtn.disabled = true;
             return;
         }
 
         const randomIndex = Math.floor(Math.random() * availableSuggestions.length);
-        currentSuggestion = availableSuggestions[randomIndex];
+        currentSuggestion = availableSuggestions[randomIndex]; // This is the target language word
         suggestionWordDisplay.textContent = currentSuggestion;
-        currentWordDisplay.textContent = '-'; // Clear translation display when new suggestion appears
+        currentWordDisplay.textContent = '-';
 
-        // Enable suggestion-related buttons
         iLearntThisBtn.disabled = false;
-        iLearntThisBtn.textContent = '✅ I learnt this!'; // Reset text
+        iLearntThisBtn.textContent = '✅ I learnt this!';
         speakSuggestionBtn.disabled = false;
-        speakAgainBtn.disabled = false; // Assuming this speaks the suggestion
+        speakAgainBtn.disabled = true; // Disable this until translation happens or suggestion is spoken? Let's disable.
 
-        // Disable the translation 'learn' button
         learntTranslatedBtn.disabled = true;
-        learntTranslatedBtn.textContent = '✅ I learnt this!'; // Reset its text too
+        learntTranslatedBtn.textContent = '✅ I learnt this!';
     }
 
     function displayLearnedWords() {
@@ -183,44 +205,55 @@ document.addEventListener('DOMContentLoaded', () => {
             learnedWordsList.innerHTML = '<p>No words learned for this language yet!</p>';
             return;
         }
-        // Sort learned words alphabetically for consistency? Optional.
-        // learnedWords.sort();
-        learnedWords.forEach(word => {
+        learnedWords.forEach(pair => {
             const wordElement = document.createElement('span');
-            wordElement.textContent = word;
-            wordElement.classList.add('learned-word');
-            wordElement.title = 'Click to hear again';
-            wordElement.addEventListener('click', () => speakWord(word));
+            // Display the pair: English -> Target
+            wordElement.textContent = `${pair.english} → ${pair.target}`;
+            wordElement.classList.add('learned-word-pair'); // Use a different class maybe?
+            wordElement.title = `Click to hear "${pair.target}"`; // Tooltip clarifies what will be spoken
+            // Make clicking speak the TARGET word
+            wordElement.addEventListener('click', () => speakWord(pair.target));
             learnedWordsList.appendChild(wordElement);
         });
     }
 
+    // Speaks a given word (usually the target language word)
     function speakWord(word) {
         const langInfo = languageMap[currentLanguage];
-        if (word && langInfo) {
+        if (word && word !== '-' && langInfo) {
             speak(word, langInfo.code, langInfo.voiceName);
         } else {
              console.warn("speakWord called with invalid word or language info", word, langInfo);
         }
     }
 
-     // Modified to accept the specific word and the button clicked
-    function handleLearnWord(wordToLearn, buttonElement) {
-        if (!wordToLearn || !wordToLearn.trim() || wordToLearn === '-' || wordToLearn === 'Translation failed') {
-            console.warn("Attempted to learn an invalid word:", wordToLearn);
+    // Modified to accept the ENGLISH word and the TARGET word
+    function handleLearnWord(englishWord, targetWord, buttonElement) {
+        if (!targetWord || !targetWord.trim() || targetWord === '-' || targetWord === 'Translation failed') {
+            console.warn("Attempted to learn an invalid target word:", targetWord);
             return;
         }
+         // Use a placeholder if English word is missing (e.g., from old data or suggestion)
+         const englishToSave = englishWord && englishWord.trim() ? englishWord.trim() : "(suggestion)";
 
-        console.log("Attempting to learn:", wordToLearn);
+        console.log(`Attempting to learn pair: "${englishToSave}" -> "${targetWord}"`);
 
-        // Add to learned list (if not already there)
-        if (!learnedWords.includes(wordToLearn)) {
-            learnedWords.push(wordToLearn);
+        // Check if the TARGET word is already in the learned list
+        const alreadyLearned = learnedWords.some(pair => pair.target === targetWord);
+
+        if (!alreadyLearned) {
+            const newPair = { english: englishToSave, target: targetWord };
+            learnedWords.push(newPair);
             displayLearnedWords(); // Update UI
-            console.log(`Added "${wordToLearn}" to local learned list.`);
+            console.log(`Added pair "${englishToSave}" -> "${targetWord}" to local learned list.`);
         } else {
-            alert(`"${wordToLearn}" is already marked as learned locally.`);
-            // Optionally allow re-opening the issue link anyway
+            alert(`The word "${targetWord}" is already marked as learned.`);
+            // Re-enable the button immediately if already learned?
+            if (buttonElement) {
+                buttonElement.disabled = false;
+                buttonElement.textContent = '✅ I learnt this!';
+            }
+            return; // Don't proceed to open GitHub issue if already learned
         }
 
         // Disable the specific button that was clicked
@@ -233,28 +266,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const langInfo = languageMap[currentLanguage];
         if (!langInfo) {
              console.error("Cannot create GitHub link: Language info not found for", currentLanguage);
-             // Re-enable button maybe?
              if (buttonElement) {
-                buttonElement.disabled = false; // Re-enable if we can't proceed
+                buttonElement.disabled = false;
                 buttonElement.textContent = '✅ I learnt this!';
              }
              return;
         }
-        const title = encodeURIComponent(`Add learned word: ${wordToLearn} (${currentLanguage})`); // Use wordToLearn
+        // Update title and body for the pair
+        const title = encodeURIComponent(`Add learned pair: ${englishToSave} / ${targetWord} (${currentLanguage})`);
         const body = encodeURIComponent(
-    `Please add the following word to the learned list for ${currentLanguage.toUpperCase()}.
+    `Please add the following word pair to the learned list for ${currentLanguage.toUpperCase()}.
 
-    Word: **${wordToLearn}**
+    English: **${englishToSave}**
+    Target (${langInfo.code}): **${targetWord}**
 
     File to update: \`data/learned_${langInfo.filePrefix}.json\`
 
-    Make sure the JSON structure remains valid (array within a "words" key):
+    Make sure the JSON structure contains objects with "english" and "target" keys within the "words" array:
     \`\`\`json
     {
       "words": [
-        "existing_word_1",
-        "existing_word_2",
-        "${wordToLearn}"
+        { "english": "existing_en_1", "target": "existing_target_1" },
+        { "english": "existing_en_2", "target": "existing_target_2" },
+        { "english": "${englishToSave}", "target": "${targetWord}" }
       ]
     }
     \`\`\`
@@ -263,40 +297,29 @@ document.addEventListener('DOMContentLoaded', () => {
     `);
         const issueUrl = `https://github.com/${GITHUB_USER}/${GITHUB_REPO}/issues/new?title=${title}&body=${body}`;
 
-        // Open the link in a new tab
         window.open(issueUrl, '_blank');
 
-        // Reset the specific button after a delay
         setTimeout(() => {
             if (buttonElement) {
                  buttonElement.textContent = '✅ I learnt this!';
-                 // Keep the button disabled after saving to prevent immediate re-clicks
-                 // buttonElement.disabled = false;
+                 // Keep disabled after saving
             }
-
-             // Only get a new SUGGESTION if the suggestion button was the one clicked
              if (buttonElement && buttonElement.id === 'i-learnt-this-btn') {
-                 console.log("Getting new suggestion after learning suggested word.");
-                 getNewSuggestion(); // Move to the next suggestion word
-             } else if (buttonElement && buttonElement.id === 'learnt-translated-btn') {
-                 console.log("Learned translated word. Resetting translation UI.");
-                 // Optionally clear the translation box or just leave it as is
-                 // currentWordDisplay.textContent = "-";
-                 // translateInput.value = ""; // Clear input box?
-                 // learntTranslatedBtn.disabled = true; // Keep disabled until next translation
+                 getNewSuggestion(); // Get new suggestion only if the suggestion button was clicked
              }
-        }, 1500); // Give some visual feedback time
+        }, 1500);
     }
 
     // --- Event Listeners ---
 
     languageSelect.addEventListener('change', (e) => {
+        // (Same as before)
         currentLanguage = e.target.value;
         console.log(`Language changed to: ${currentLanguage}`);
         currentSuggestion = null;
         suggestionWordDisplay.textContent = '-';
         currentWordDisplay.textContent = '-';
-        translateInput.value = ''; // Clear input on language change
+        translateInput.value = '';
         iLearntThisBtn.disabled = true;
         learntTranslatedBtn.disabled = true;
         speakSuggestionBtn.disabled = true;
@@ -304,30 +327,37 @@ document.addEventListener('DOMContentLoaded', () => {
         loadLanguageData(currentLanguage);
     });
 
-    // Speaks the SUGGESTED word
+    // Speaks the SUGGESTED word (target language)
     speakSuggestionBtn.addEventListener('click', () => speakWord(currentSuggestion));
 
-    // Speaks the word currently shown in the TRANSLATION display
+    // Speaks the word currently shown in the TRANSLATION display (target language)
     speakAgainBtn.addEventListener('click', () => speakWord(currentWordDisplay.textContent));
 
     // Gets a new SUGGESTION
     nextWordBtn.addEventListener('click', getNewSuggestion);
 
-    // Learns the SUGGESTED word
-    iLearntThisBtn.addEventListener('click', (event) => handleLearnWord(currentSuggestion, event.currentTarget));
+    // Learns the SUGGESTED word -> saving pair like { english: "(suggestion)", target: "..." }
+    iLearntThisBtn.addEventListener('click', (event) => {
+        // For suggestions, we only have the target word (currentSuggestion)
+        // We'll pass null or a placeholder for the English part
+        handleLearnWord("(suggestion)", currentSuggestion, event.currentTarget);
+    });
 
-    // Learns the TRANSLATED word
+    // Learns the TRANSLATED word -> saving pair like { english: "InputText", target: "TranslatedText" }
     learntTranslatedBtn.addEventListener('click', (event) => {
-        const translatedWord = currentWordDisplay.textContent;
-        handleLearnWord(translatedWord, event.currentTarget);
+        const englishWord = translateInput.value; // Get the original input
+        const targetWord = currentWordDisplay.textContent; // Get the translation result
+        handleLearnWord(englishWord, targetWord, event.currentTarget);
     });
 
     toggleLearnedBtn.addEventListener('click', () => {
+        // (Same as before)
         const isHidden = learnedWordsList.classList.toggle('hidden');
         toggleLearnedBtn.textContent = isHidden ? 'Show' : 'Hide';
     });
 
     translateAndSpeakBtn.addEventListener('click', async () => {
+        // (Translation logic is the same, but enable speakAgainBtn)
         const text = translateInput.value.trim();
         if (!text) return;
 
@@ -338,8 +368,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         const targetLangCode = langInfo.code;
-        currentWordDisplay.textContent = "Translating..."; // Indicate activity
-        learntTranslatedBtn.disabled = true; // Disable while translating
+        currentWordDisplay.textContent = "Translating...";
+        learntTranslatedBtn.disabled = true;
+        speakAgainBtn.disabled = true; // Disable while translating
 
         try {
             const response = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLangCode}&dt=t&q=${encodeURIComponent(text)}`);
@@ -347,42 +378,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(`Translation API error! status: ${response.status}`);
             }
             const data = await response.json();
-            // Extract translation, handle potential variations in response structure
             const translated = data?.[0]?.[0]?.[0] || "Translation failed";
 
-            currentWordDisplay.textContent = translated; // Display result
+            currentWordDisplay.textContent = translated;
 
             if (translated && translated !== "Translation failed") {
-                speak(translated, targetLangCode, langInfo.voiceName); // Speak the translation
-                learntTranslatedBtn.disabled = false; // Enable the button for this translation
-                learntTranslatedBtn.textContent = '✅ I learnt this!'; // Reset text
-                // Optionally disable the suggestion learn button if you translated something
-                 // iLearntThisBtn.disabled = true;
+                speak(translated, targetLangCode, langInfo.voiceName);
+                learntTranslatedBtn.disabled = false; // Enable saving the translated pair
+                learntTranslatedBtn.textContent = '✅ I learnt this!';
+                speakAgainBtn.disabled = false; // Enable speaking the translation again
             } else {
-                 learntTranslatedBtn.disabled = true; // Keep disabled if translation failed
+                 learntTranslatedBtn.disabled = true;
+                 speakAgainBtn.disabled = true;
             }
 
         } catch (err) {
             console.error("Translation or Speaking failed:", err);
             currentWordDisplay.textContent = "Translation failed";
-            learntTranslatedBtn.disabled = true; // Ensure disabled on error
+            learntTranslatedBtn.disabled = true;
+            speakAgainBtn.disabled = true;
         }
     });
 
     // --- Initialisation ---
     function initialize() {
+        // (Same as before)
         if (voices.length === 0 && synth.getVoices().length === 0) {
-             // Voices might load asynchronously, wait a bit longer if needed
              console.log("Waiting for voices to load...");
             setTimeout(initialize, 250);
             return;
         }
-         if (voices.length === 0) { // If still empty, populate again
+         if (voices.length === 0) {
              populateVoiceList();
          }
         console.log("App Initialized. Voices ready.");
-        loadLanguageData(currentLanguage); // Load data for the default language
+        loadLanguageData(currentLanguage);
     }
 
-    initialize(); // Start the app
+    initialize();
 });
