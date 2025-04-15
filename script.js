@@ -243,16 +243,20 @@ document.addEventListener('DOMContentLoaded', () => {
             targetElement.classList.add('target-word'); // Class for styling Target word
             targetElement.title = `Click to hear "${pair.target}"`; // Tooltip
 
+            let phoneticCardElement = null; // Define variable outside the if scope
             if (pair.phonetic) {
                 const phoneticCardElement = document.createElement('span');
                 phoneticCardElement.textContent = pair.phonetic;
                 phoneticCardElement.classList.add('phonetic-word-card'); // Add a class for styling
-                pairCard.appendChild(phoneticCardElement); // Add below target
+                //pairCard.appendChild(phoneticCardElement); // Add below target
            }
   
-            // Append English and Target words to the card
-            pairCard.appendChild(englishElement);
-            pairCard.appendChild(targetElement);
+            // Append elements to the card in desired order
+            pairCard.appendChild(englishElement); // English first
+            pairCard.appendChild(targetElement);  // Then target word
+            if (phoneticCardElement) {           // If the phonetic element was created...
+                pairCard.appendChild(phoneticCardElement); // ...append it AFTER the target word
+            }
   
             // Add click listener to the CARD to speak the TARGET word
             pairCard.addEventListener('click', () => speakWord(pair.target));
