@@ -1,0 +1,31 @@
+name: Save Learned Word
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  save:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Save word to JSON
+        run: |
+          LANG=$(echo "${{ github.event.issue.title }}" | cut -d':' -f2)
+          WORD=$(echo "${{ github.event.issue.body }}" | sed -n "s/Add \\"\\(.*\\)\\" to.*/\\1/p")
+          FILE="public/learned/${LANG}.json"
+
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
+          mkdir -p public/learned
+          if [ ! -f "$FILE" ]; then echo "[]" > "$FILE"; fi
+          jq --arg word "$WORD" 'if index($word) == null then . + [$word] else . end' "$FILE" > tmp && mv tmp "$FILE"
+
+          git add "$FILE"
+          git commit -m "Add '$WORD' to learned list ($LANG)"
+          git push
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
