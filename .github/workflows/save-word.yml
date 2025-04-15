@@ -1,30 +1,60 @@
-name: Save Learned Word
+name: Auto Save & Merge Learned Word
 
 on:
   issues:
     types: [opened]
 
 jobs:
-  save:
+  save-word:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v3
 
-      - name: Save word to JSON
+      - name: Setup Git
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+
+      - name: Extract word & language
+        id: extract
         run: |
           LANG=$(echo "${{ github.event.issue.title }}" | cut -d':' -f2)
-          WORD=$(echo "${{ github.event.issue.body }}" | sed -n "s/Add \\"\\(.*\\)\\" to.*/\\1/p")
-          FILE="learned/${LANG}.json"
+          WORD=$(echo "${{ github.event.issue.body }}" | sed -n "s/Add \\\"\\(.*\\)\\\" to.*/\\1/p")
+          BRANCH="learned-${LANG}-${RANDOM}"
+          echo "lang=${LANG}" >> $GITHUB_OUTPUT
+          echo "word=${WORD}" >> $GITHUB_OUTPUT
+          echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
 
-          git config user.name github-actions
-          git config user.email github-actions@github.com
+      - name: Create and switch to new branch
+        run: |
+          git checkout -b ${{ steps.extract.outputs.branch }}
 
-          mkdir -p learned
-          if [ ! -f "$FILE" ]; then echo "[]" > "$FILE"; fi
-          jq --arg word "$WORD" 'if index($word) == null then . + [$word] else . end' "$FILE" > tmp && mv tmp "$FILE"
-
+      - name: Update learned words JSON
+        run: |
+          FILE="data/learned_${{ steps.extract.outputs.lang }}.json"
+          mkdir -p data
+          if [ ! -f "$FILE" ]; then echo '{"words":[]}' > "$FILE"; fi
+          jq --arg word "${{ steps.extract.outputs.word }}" '.words |= if index($word) == null then . + [$word] else . end' "$FILE" > tmp && mv tmp "$FILE"
           git add "$FILE"
-          git commit -m "Add '$WORD' to learned list ($LANG)"
-          git push
+          git commit -m "Add learned word: ${{ steps.extract.outputs.word }} (${{
+            steps.extract.outputs.lang }})"
+          git push origin ${{ steps.extract.outputs.branch }}
+
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Add learned word: ${{ steps.extract.outputs.word }}"
+          branch: ${{ steps.extract.outputs.branch }}
+          title: "Learned: ${{ steps.extract.outputs.word }}"
+          body: "Automatically adding learned word."
+          base: main
+
+      - name: Auto-merge PR
+        uses: pascalgn/automerge-action@v0.15.5
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

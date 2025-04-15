@@ -236,3 +236,22 @@ em {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+#text-to-translate {
+  padding: 12px 15px;
+  font-size: 1.1em;
+  border-radius: 10px;
+  border: 2px solid #add8e6;
+  background-color: #fff;
+  font-family: 'Fredoka', sans-serif;
+  width: 60%;
+  max-width: 400px;
+}
+
+#translate-and-speak-btn {
+  background-color: #ffa07a; /* Light Salmon */
+  color: white;
+}
+#translate-and-speak-btn:hover {
+  background-color: #ff7f50; /* Coral */
+}
