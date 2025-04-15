@@ -1,3 +1,8 @@
 {
-  "words": []
+  "words": [
+    {
+      "english": "hi",
+      "target": "你好"
+    }
+  ]
 }
