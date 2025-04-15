@@ -1,33 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <link rel="icon" href="data:,">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Shashi Language Learn</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shashi Language Learning!</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <h1>Shashi Language Learn</h1>
-  <div class="app">
-    <select id="language">
-      <option value="french">French</option>
-      <option value="mandarin">Mandarin</option>
-      <option value="spanish">Spanish</option>
-    </select>
-    
-    <input type="text" id="inputText" placeholder="Enter word or sentence..." />
-    <button id="translateButton">Translate & Speak</button>
-    <button id="saveWord">I learnt this!</button>
-    
-    <h2>Translation:</h2>
-    <p id="translatedText"></p>
-    <p id="pronunciationText" class="pronunciation"></p> 
+    <div class="container">
+        <h1>Shashi's Languages! 🎉</h1>
 
-    <h2>Learned Words</h2>
-    <ul id="learnedWords"></ul>
-  </div>
+        <div class="controls">
+            <label for="language-select">Choose a Language:</label>
+            <select id="language-select">
+                <option value="en">Mandarin</option>
+                <option value="fr">French (France)</option>
+                <option value="es">Spanish (Spain)</option>
+                <option value="de">German</option>
+                <!-- Add more languages here -->
+            </select>
+        </div>
 
-  <script type="module" src="main.js"></script>
+        <div class="main-content">
+            <div class="suggestion-box">
+                <h2>Try learning this word:</h2>
+                <div id="suggestion-word" class="word-display">Click "Next Word"</div>
+                <button id="speak-suggestion-btn" class="action-btn speak-btn" title="Hear the word">🔊</button>
+                <button id="next-word-btn" class="action-btn">Next Word ➡️</button>
+                <button id="i-learnt-this-btn" class="action-btn learnt-btn" disabled>✅ I learnt this!</button>
+            </div>
+
+            <div class="translation-box">
+                <h2>What does it sound like?</h2>
+                <div id="current-word-display" class="word-display">-</div>
+                 <!-- Translation & Pronunciation are simplified here -->
+                <p><em>(Listen carefully to the sound!)</em></p>
+                <button id="speak-again-btn" class="action-btn speak-btn" title="Hear it again">🔊 Play Sound</button>
+            </div>
+        </div>
+
+         <div class="learned-section">
+            <h2>Words I Already Know! <button id="toggle-learned-btn">Show/Hide</button></h2>
+            <div id="learned-words-list" class="word-list hidden">
+                <!-- Learned words will be loaded here -->
+                <p>Loading...</p>
+            </div>
+        </div>
+
+        <footer>
+            <p>Happy Learning!</p>
+        </footer>
+
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
