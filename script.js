@@ -313,16 +313,22 @@ After editing the file, commit the change and push it to the main branch. The we
       const data = await res.json();
       const translated = data[0]?.[0]?.[0] || "Translation failed";
   
-      currentSuggestion = translated;                         // <-- enable 'i learnt this' for typed words
-      iLearntThisBtn.disabled = false;                        // <-- make the button clickable
+      currentSuggestion = translated;
       currentWordDisplay.textContent = translated;
       speak(translated, targetLangCode, languageMap[currentLanguage].voiceName);
+  
+      // 👇 This ensures the learned word is tracked just like a suggested one
+      if (!learnedWords.includes(translated)) {
+        learnedWords.push(translated);
+      }
 
+      iLearntThisBtn.disabled = false; // Enable the button
     } catch (err) {
       console.error("Translation failed", err);
       currentWordDisplay.textContent = "Translation failed";
     }
   });
+  
   
 
   // --- Initialisation ---
