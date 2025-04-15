@@ -4,6 +4,11 @@
       "english": "hi",
       "target": "你好",
       "phonetic": "Nǐ hǎo"
+    },
+    {
+      "english": "bye",
+      "target": "再见",
+      "phonetic": "Zàijiàn"
     }
   ]
 }
