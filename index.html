@@ -50,6 +50,26 @@
         <div>
             <h2></h2>
         </div>
+        <div class="controls">
+            <button id="start-quiz-btn" class="action-btn">🧠 Start Quiz!</button>
+        </div>
+        <div class="quiz-section" id="quiz-section" style="display: none;">
+            <h2>Quiz Time!</h2>
+            <div class="quiz-card">
+                <div class="quiz-question-area">
+                    <p>English:</p>
+                    <div id="quiz-question" class="word-display">?</div>
+                </div>
+                <div class="quiz-answer-area" id="quiz-answer-area" style="visibility: hidden;"> <p>Target (<span id="quiz-target-lang"></span>):</p>
+                    <div id="quiz-answer" class="word-display">-</div>
+                    <div id="quiz-phonetic" class="phonetic-display"></div>
+                </div>
+            </div>
+            <div class="quiz-controls">
+                <button id="reveal-answer-btn" class="action-btn">Reveal Answer</button>
+                <button id="next-quiz-word-btn" class="action-btn" disabled>Next Word ➡️</button>
+                <button id="end-quiz-btn" class="action-btn learnt-btn">End Quiz</button> </div>
+        </div>
         <div>
             <div class="suggestion-box">
                 <h2>Try learning this word:</h2>

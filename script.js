@@ -28,6 +28,24 @@ document.addEventListener('DOMContentLoaded', () => {
     let synth = window.speechSynthesis;
     let voices = [];
 
+    // --- Quiz State Variables ---
+    let isQuizActive = false;
+    let currentQuizPair = null;
+    let quizWordIndices = []; // To track order if needed, or shown words
+    let availableQuizIndices = []; // Indices of learnedWords available for quiz
+
+    // Quiz Element References
+    const startQuizBtn = document.getElementById('start-quiz-btn');
+    const quizSection = document.getElementById('quiz-section');
+    const quizQuestion = document.getElementById('quiz-question');
+    const quizAnswerArea = document.getElementById('quiz-answer-area');
+    const quizAnswer = document.getElementById('quiz-answer');
+    const quizPhonetic = document.getElementById('quiz-phonetic');
+    const quizTargetLang = document.getElementById('quiz-target-lang'); // To show target language
+    const revealAnswerBtn = document.getElementById('reveal-answer-btn');
+    const nextQuizWordBtn = document.getElementById('next-quiz-word-btn');
+    const endQuizBtn = document.getElementById('end-quiz-btn');
+
     // --- Language Mapping ---
     const languageMap = {
         'ch': { code: 'zh-CN', voiceName: 'Google 中文（普通话）', filePrefix: 'ch' },
@@ -459,6 +477,89 @@ document.addEventListener('DOMContentLoaded', () => {
             speakAgainBtn.disabled = true;
         }
     });
+
+    // --- Quiz Functions ---
+    function startQuiz() {
+        if (learnedWords.length === 0) {
+            alert("You need to learn some words first before starting a quiz!");
+            return;
+        }
+        console.log("Starting quiz...");
+        isQuizActive = true;
+        // Create a list of indices from the learnedWords array
+        availableQuizIndices = learnedWords.map((_, index) => index);
+        // Optional: Shuffle the indices for random order
+        availableQuizIndices.sort(() => Math.random() - 0.5);
+
+        quizSection.style.display = 'block'; // Show the quiz section
+        // Optional: Hide other sections like suggestion/translation if desired
+        // document.querySelector('.main-content').style.display = 'none';
+
+        displayNextQuizWord(); // Show the first word
+    }
+
+    function displayNextQuizWord() {
+        if (availableQuizIndices.length === 0) {
+            // If we've shown all words, reshuffle and start again
+            if (learnedWords.length > 0) {
+                alert("You've reviewed all learned words! Starting over.");
+                availableQuizIndices = learnedWords.map((_, index) => index);
+                availableQuizIndices.sort(() => Math.random() - 0.5);
+            } else {
+                // Should not happen if initial check passed, but just in case
+                endQuiz();
+                return;
+            }
+        }
+
+        // Get the next index from our shuffled list
+        const nextIndex = availableQuizIndices.pop(); // Remove last element
+        currentQuizPair = learnedWords[nextIndex];
+
+        // Display the question (English word)
+        quizQuestion.textContent = currentQuizPair.english;
+
+        // Hide the answer area and clear previous answer/phonetic
+        quizAnswerArea.style.visibility = 'hidden';
+        quizAnswer.textContent = '-';
+        quizPhonetic.textContent = '';
+        quizTargetLang.textContent = currentLanguage.toUpperCase(); // Show current language code
+
+        // Reset button states
+        revealAnswerBtn.disabled = false;
+        nextQuizWordBtn.disabled = true;
+    }
+
+    function revealAnswer() {
+        if (!currentQuizPair) return;
+
+        // Display the answer (Target word and Phonetic)
+        quizAnswer.textContent = currentQuizPair.target;
+        quizPhonetic.textContent = currentQuizPair.phonetic || ''; // Show phonetic if available
+        quizAnswerArea.style.visibility = 'visible'; // Show the answer area
+
+        // Update button states
+        revealAnswerBtn.disabled = true;
+        nextQuizWordBtn.disabled = false;
+
+        // Speak the target word when revealed
+        speakWord(currentQuizPair.target);
+    }
+
+    function endQuiz() {
+        console.log("Ending quiz.");
+        isQuizActive = false;
+        currentQuizPair = null;
+        quizSection.style.display = 'none'; // Hide the quiz section
+        // Optional: Show other sections again if they were hidden
+        // document.querySelector('.main-content').style.display = 'flex'; // Or 'block' depending on original style
+    }
+
+    // --- Quiz Event Listeners ---
+    startQuizBtn.addEventListener('click', startQuiz);
+    revealAnswerBtn.addEventListener('click', revealAnswer);
+    nextQuizWordBtn.addEventListener('click', displayNextQuizWord);
+    endQuizBtn.addEventListener('click', endQuiz);
 
     // --- Initialisation ---
     function initialize() {

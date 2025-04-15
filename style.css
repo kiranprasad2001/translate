@@ -397,3 +397,89 @@ em {
   font-style: italic;
   margin-top: 2px;
 }
+
+/* --- Quiz Section Styles --- */
+.quiz-section {
+  background-color: #e6e6fa; /* Lavender */
+  padding: 20px;
+  border-radius: 15px;
+  margin-top: 30px;
+  border: 2px dashed #cbc3e3; /* Light Lavender */
+}
+
+.quiz-card {
+  background-color: #fff;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+
+.quiz-question-area, .quiz-answer-area {
+  margin-bottom: 15px;
+}
+
+.quiz-question-area p, .quiz-answer-area p {
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 5px;
+  font-size: 1.1em;
+}
+
+/* Style for the answer area when hidden */
+.quiz-answer-area[style*="visibility: hidden;"] {
+    opacity: 0.5; /* Optional: slightly visible hint */
+}
+
+/* Inherit word-display styles, but maybe adjust size */
+#quiz-question, #quiz-answer {
+   font-size: 1.8em;
+   min-height: 40px;
+}
+
+/* Inherit phonetic display styles */
+#quiz-phonetic {
+    min-height: 1em;
+}
+
+.quiz-controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap; /* Allow buttons to wrap on small screens */
+}
+
+/* Add specific styles for quiz buttons if needed, */
+/* otherwise they use .action-btn styles */
+#reveal-answer-btn {
+  background-color: #32cd32; /* Lime Green */
+  color: white;
+}
+ #reveal-answer-btn:hover:not(:disabled) {
+   background-color: #228b22; /* Forest Green */
+ }
+
+#end-quiz-btn {
+  background-color: #ff6347; /* Tomato Red */
+}
+ #end-quiz-btn:hover:not(:disabled) {
+  background-color: #d24d32;
+}
+
+/* Add responsive rules for quiz if needed */
+@media (max-width: 600px) {
+    .quiz-section {
+        padding: 15px;
+    }
+    #quiz-question, #quiz-answer {
+       font-size: 1.5em;
+    }
+    .quiz-controls button {
+      /* Ensure quiz buttons stack reasonably */
+       width: calc(50% - 10px); /* Two buttons per row */
+       min-width: 120px;
+    }
+    #end-quiz-btn {
+       width: 100%; /* Make end button full width */
+    }
+}
