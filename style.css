@@ -380,3 +380,13 @@ em {
   font-weight: 500; /* Make target word slightly bolder */
   color: #0050b3; /* Darker blue for target */
 }
+
+/* Style for the phonetic transcription display */
+.phonetic-display {
+  font-size: 1.1em;  /* Adjust size as needed */
+  color: #666;      /* Grey color */
+  margin-top: 5px;   /* Space above it */
+  margin-bottom: 10px; /* Space below it */
+  min-height: 1.2em; /* Reserve some space even when empty */
+  font-style: italic; /* Optional: make it italic */
+}

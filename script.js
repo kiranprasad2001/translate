@@ -385,25 +385,48 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         const targetLangCode = langInfo.code;
-        currentWordDisplay.textContent = "Translating...";
-        learntTranslatedBtn.disabled = true;
-        speakAgainBtn.disabled = true; // Disable while translating
-
+        const phoneticDisplayElement = document.getElementById('current-phonetic-display'); // Get the new element
+        currentWordDisplay.textContent = "Translating..."; // Indicate activity
+        phoneticDisplayElement.textContent = ''; // Clear previous phonetic text
+        learntTranslatedBtn.disabled = true; // Disable until translation is done
+        speakAgainBtn.disabled = true; // Disable until translation is done
         try {
-            const response = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLangCode}&dt=t&q=${encodeURIComponent(text)}`);
+            //const response = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLangCode}&dt=t&q=${encodeURIComponent(text)}`);
+            const apiUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLangCode}&dt=t&dt=rm&q=${encodeURIComponent(text)}`;
+            const response = await fetch(apiUrl);
             if (!response.ok) {
                 throw new Error(`Translation API error! status: ${response.status}`);
             }
             const data = await response.json();
             const translated = data?.[0]?.[0]?.[0] || "Translation failed";
 
-            currentWordDisplay.textContent = translated;
+            let phonetic = data?.[0]?.[2]?.[0] || data?.[0]?.[2]?.[2] || data?.[0]?.[2]?.[3] || null;
+
+            // Sometimes the phonetic might be the same as the source if no transliteration exists
+            if (phonetic === text || phonetic === translated) {
+                phonetic = null; // Don't show if it's just repeating input/output
+            }
+
+            currentWordDisplay.textContent = translated; // Display result
+            phoneticDisplayElement.textContent = phonetic || ''; // Display phonetic text or empty string
 
             if (translated && translated !== "Translation failed") {
                 speak(translated, targetLangCode, langInfo.voiceName);
                 learntTranslatedBtn.disabled = false; // Enable saving the translated pair
                 learntTranslatedBtn.textContent = '✅ I learnt this!';
                 speakAgainBtn.disabled = false; // Enable speaking the translation again
+
+                // --- IMPORTANT: Saving Phonetics? ---
+                // If you want to save the phonetic along with the pair, you'd need to:
+                // 1. Modify the `handleLearnWord` function to accept phonetic data.
+                // 2. Update the learnedWords array structure (e.g., { english: "...", target: "...", phonetic: "..." }).
+                // 3. Update the GitHub issue body generation to include phonetics.
+                // 4. Update the displayLearnedWords function to show phonetics on the cards.
+                // This adds significant complexity, so we're skipping it for now.
+                // The current handleLearnWord call for the translation button would remain:
+                // handleLearnWord(text, translated, learntTranslatedBtn); // Pass original English and target
+                // ---
+
             } else {
                  learntTranslatedBtn.disabled = true;
                  speakAgainBtn.disabled = true;
@@ -412,6 +435,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             console.error("Translation or Speaking failed:", err);
             currentWordDisplay.textContent = "Translation failed";
+            phoneticDisplayElement.textContent = ''; // Clear on error
             learntTranslatedBtn.disabled = true;
             speakAgainBtn.disabled = true;
         }
