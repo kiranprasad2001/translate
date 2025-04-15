@@ -1,60 +1,110 @@
-name: Auto Save & Merge Learned Word
+name: Auto Save & Merge Learned Word Pair
 
 on:
   issues:
-    types: [opened]
+    types: [opened] # Trigger only when an issue is opened
 
 jobs:
-  save-word:
+  save-word-pair: # Renamed job for clarity
     runs-on: ubuntu-latest
+    # Grant permissions to write contents (for commit/push) and pull requests (for creating PR)
     permissions:
       contents: write
       pull-requests: write
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository code
+        uses: actions/checkout@v4 # Use a newer version of checkout
 
-      - name: Setup Git
+      - name: Setup Git User
         run: |
-          git config --global user.name 'github-actions'
-          git config --global user.email 'github-actions@github.com'
+          git config --global user.name 'github-actions[bot]' # Standard bot user name
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com' # Standard bot email
 
-      - name: Extract word & language
+      - name: Install jq # **** ADDED STEP ****
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Extract word pair & language from issue # **** MODIFIED STEP ****
         id: extract
         run: |
           TITLE="${{ github.event.issue.title }}"
-          BODY="${{ github.event.issue.body }}"
+          # Ensure body handles potential carriage returns
+          BODY=$(echo "${{ github.event.issue.body }}" | tr -d '\r')
 
-          LANG=$(echo "$TITLE" | cut -d':' -f2 | tr -cd '[:alnum:]')
-          WORD=$(echo "$BODY" | sed -n 's/Add \"\(.*\)\" to.*/\1/p')
-          SAFE_WORD=$(echo "$WORD" | tr -cd '[:alnum:]_' | cut -c1-20)
-          BRANCH="learned-${SAFE_WORD}-${RANDOM}"
+          # Extract language code from parentheses in title (e.g., (ch) -> ch)
+          LANG=$(echo "$TITLE" | grep -oP '\(\K[^)]+')
+          # Extract English word from body line: English: **word**
+          ENGLISH_WORD=$(echo "$BODY" | grep -oP 'English: \*\*\K[^*]+')
+          # Extract Target word from body line: Target (...): **word**
+          TARGET_WORD=$(echo "$BODY" | grep -oP 'Target \([^)]+\): \*\*\K[^*]+')
+
+          # Create a safe branch name based on target word + random number
+          SAFE_TARGET_WORD=$(echo "$TARGET_WORD" | tr -cd '[:alnum:]_' | cut -c1-20)
+          BRANCH="learned-${SAFE_TARGET_WORD:-word}-${RANDOM}" # Fallback if target word extraction fails
+
+          echo "Extracted Lang: $LANG"
+          echo "Extracted English: $ENGLISH_WORD"
+          echo "Extracted Target: $TARGET_WORD"
+          echo "Branch Name: $BRANCH"
+
+          # Check if extractions were successful
+          if [ -z "$LANG" ] || [ -z "$ENGLISH_WORD" ] || [ -z "$TARGET_WORD" ]; then
+            echo "Error: Failed to extract required information from issue title/body."
+            exit 1
+          fi
 
           echo "lang=$LANG" >> $GITHUB_OUTPUT
-          echo "word=$WORD" >> $GITHUB_OUTPUT
+          echo "english_word=$ENGLISH_WORD" >> $GITHUB_OUTPUT
+          echo "target_word=$TARGET_WORD" >> $GITHUB_OUTPUT
           echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+        shell: bash # Explicitly use bash
 
       - name: Create and switch to new branch
         run: |
           git checkout -b ${{ steps.extract.outputs.branch }}
+        shell: bash
 
-      - name: Update learned words JSON
+      - name: Update learned words JSON # **** MODIFIED STEP ****
         run: |
           FILE="data/learned_${{ steps.extract.outputs.lang }}.json"
-          mkdir -p data
-          if [ ! -f "$FILE" ]; then echo '{"words":[]}' > "$FILE"; fi
-          jq --arg word "${{ steps.extract.outputs.word }}" '.words |= if index($word) == null then . + [$word] else . end' "$FILE" > tmp && mv tmp "$FILE"
-          git add "$FILE"
-          git commit -m "Add learned word: ${{ steps.extract.outputs.word }} (${{
-            steps.extract.outputs.lang }})"
-          git push origin ${{ steps.extract.outputs.branch }}
+          ENGLISH_WORD="${{ steps.extract.outputs.english_word }}"
+          TARGET_WORD="${{ steps.extract.outputs.target_word }}"
 
-      - name: Create Pull Request
+          echo "Updating file: $FILE"
+          echo "English Word: $ENGLISH_WORD"
+          echo "Target Word: $TARGET_WORD"
+
+          # Create directory and default file if they don't exist
+          mkdir -p data
+          if [ ! -f "$FILE" ]; then
+            echo '{"words":[]}' > "$FILE"
+            echo "Created initial file $FILE"
+          fi
+
+          # Use jq to add the object {english, target} if target word is not already present
+          # Checks if any object in the .words array has a .target property equal to TARGET_WORD
+          jq --arg eng "$ENGLISH_WORD" --arg tgt "$TARGET_WORD" \
+             'if (.words | map(.target) | index($tgt)) == null then .words += [{"english": $eng, "target": $tgt}] else . end' \
+             "$FILE" > tmp.$$.json && mv tmp.$$.json "$FILE"
+
+          echo "JSON file updated."
+          git status # Show status for debugging
+          git add "$FILE"
+          # Update commit message to include pair
+          git commit -m "Add learned pair: ${ENGLISH_WORD} / ${TARGET_WORD} (${{ steps.extract.outputs.lang }})"
+          git push origin ${{ steps.extract.outputs.branch }}
+        shell: bash
+
+      - name: Create Pull Request # **** MODIFIED STEP (title) ****
         id: cpr
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v6 # Use latest version
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "Add learned word: ${{ steps.extract.outputs.word }}"
+          commit-message: "Add learned pair: ${{ steps.extract.outputs.english_word }} / ${{ steps.extract.outputs.target_word }}"
           branch: ${{ steps.extract.outputs.branch }}
-          title: "Learned: ${{ steps.extract.outputs.word }}"
-          body: "Automatically adding learned word."
-          base: main
+          # Update PR title
+          title: "Learned: ${{ steps.extract.outputs.english_word }} / ${{ steps.extract.outputs.target_word }} (${{ steps.extract.outputs.lang }})"
+          body: "Automatically adding learned word pair triggered by issue #${{ github.event.issue.number }}."
+          base: main # Or your default branch
+          labels: learned-word, automated-pr # Optional: add labels
+          delete-branch: true # Optional: delete branch after merge/close
