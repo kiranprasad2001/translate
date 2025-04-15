@@ -21,14 +21,17 @@ jobs:
       - name: Extract word & language
         id: extract
         run: |
-          LANG=$(echo "${{ github.event.issue.title }}" | cut -d':' -f2)
-          WORD=$(echo "${{ github.event.issue.body }}" | sed -n "s/Add \\\"\\(.*\\)\\\" to.*/\\1/p")
-          SAFE_WORD=$(echo "$WORD" | tr -cd '[:alnum:]-' | cut -c1-20)
-          BRANCH="learned-${SAFE_WORD}-${RANDOM}"
-          echo "lang=${LANG}" >> $GITHUB_OUTPUT
-          echo "word=${WORD}" >> $GITHUB_OUTPUT
-          echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
+          TITLE="${{ github.event.issue.title }}"
+          BODY="${{ github.event.issue.body }}"
 
+          LANG=$(echo "$TITLE" | cut -d':' -f2 | tr -cd '[:alnum:]')
+          WORD=$(echo "$BODY" | sed -n 's/Add \"\(.*\)\" to.*/\1/p')
+          SAFE_WORD=$(echo "$WORD" | tr -cd '[:alnum:]_' | cut -c1-20)
+          BRANCH="learned-${SAFE_WORD}-${RANDOM}"
+
+          echo "lang=$LANG" >> $GITHUB_OUTPUT
+          echo "word=$WORD" >> $GITHUB_OUTPUT
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
 
       - name: Create and switch to new branch
         run: |
