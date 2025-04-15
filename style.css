@@ -255,3 +255,66 @@ em {
 #translate-and-speak-btn:hover {
   background-color: #ff7f50; /* Coral */
 }
+
+/* --- Responsive Design --- */
+
+/* Target screens smaller than 600px (adjust breakpoint as needed) */
+@media (max-width: 600px) {
+
+  .container {
+    padding: 20px 15px; /* Reduce padding on small screens */
+    width: 95%; /* Allow container to use more screen width */
+  }
+
+  h1 {
+    font-size: 2em; /* Slightly smaller heading */
+  }
+
+  h2 {
+    font-size: 1.5em; /* Slightly smaller sub-headings */
+  }
+
+  .controls {
+    flex-direction: column; /* Stack controls vertically */
+    align-items: stretch; /* Make items fill width */
+    gap: 15px; /* Adjust gap for vertical layout */
+  }
+
+  /* Specifically target the controls div holding the text input and translate button */
+  .controls:has(#text-to-translate) { /* Modern CSS selector */
+     /* You might not need specific rules here if the general .controls rule works */
+  }
+
+  /* Make input and select elements take more width */
+  select,
+  #text-to-translate {
+     width: 100%; /* Use full available width within the controls */
+  }
+
+   /* Ensure buttons also take appropriate width */
+  .controls button {
+      width: 100%; /* Make buttons in controls take full width */
+      max-width: 300px; /* Optional: prevent buttons getting TOO wide */
+      align-self: center; /* Center buttons if max-width is applied */
+  }
+
+  .main-content {
+     flex-direction: column; /* Already column, but ensures consistency */
+     gap: 20px;
+  }
+
+  .word-display {
+      font-size: 1.8em; /* Adjust font size for smaller screens */
+  }
+
+  .action-btn {
+      padding: 10px 15px; /* Adjust padding */
+      font-size: 1em;
+  }
+
+  .speak-btn {
+      font-size: 1.3em;
+      padding: 6px 12px;
+  }
+
+}
