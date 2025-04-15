@@ -398,6 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(`Translation API error! status: ${response.status}`);
             }
             const data = await response.json();
+            console.log("Full API Response:", JSON.stringify(data));
             const translated = data?.[0]?.[0]?.[0] || "Translation failed";
 
             let phonetic = data?.[0]?.[2]?.[0] || data?.[0]?.[2]?.[2] || data?.[0]?.[2]?.[3] || null;
