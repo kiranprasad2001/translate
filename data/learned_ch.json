@@ -9,6 +9,11 @@
       "english": "bye",
       "target": "再见",
       "phonetic": "Zàijiàn"
+    },
+    {
+      "english": "how are you",
+      "target": "你好吗",
+      "phonetic": "Nǐ hǎo ma"
     }
   ]
 }
