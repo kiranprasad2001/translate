@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const nextWordBtn = document.getElementById('next-word-btn');
     const iLearntThisBtn = document.getElementById('i-learnt-this-btn'); // Original button for suggestions
     const currentWordDisplay = document.getElementById('current-word-display');
+    // Reference the phonetic display element
+    const phoneticDisplayElement = document.getElementById('current-phonetic-display');
     const speakAgainBtn = document.getElementById('speak-again-btn');
     const learnedWordsList = document.getElementById('learned-words-list');
     const toggleLearnedBtn = document.getElementById('toggle-learned-btn');
@@ -19,9 +21,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- State Variables ---
     let currentLanguage = languageSelect.value;
-    let currentSuggestion = null; // Will hold the target language word for suggestions
-    let suggestionWords = []; // Array of target language suggestion words
-    let learnedWords = []; // Will store objects: { english: "...", target: "..." }
+    let currentSuggestion = null;
+    let suggestionWords = [];
+    // learnedWords now stores { english: "...", target: "...", phonetic: "..." }
+    let learnedWords = [];
     let synth = window.speechSynthesis;
     let voices = [];
 
@@ -78,7 +81,6 @@ document.addEventListener('DOMContentLoaded', () => {
             utterThis.pitch = 1;
             utterThis.rate = 0.7;
             utterThis.volume = 1;
-
             synth.speak(utterThis);
         } else {
              console.warn("Speak function called with invalid text:", text);
@@ -189,6 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentSuggestion = availableSuggestions[randomIndex]; // This is the target language word
         suggestionWordDisplay.textContent = currentSuggestion;
         currentWordDisplay.textContent = '-';
+        phoneticDisplayElement.textContent = ''; // Clear phonetic too
 
         iLearntThisBtn.disabled = false;
         iLearntThisBtn.textContent = '✅ I learnt this!';
@@ -221,6 +224,13 @@ document.addEventListener('DOMContentLoaded', () => {
             targetElement.textContent = pair.target;
             targetElement.classList.add('target-word'); // Class for styling Target word
             targetElement.title = `Click to hear "${pair.target}"`; // Tooltip
+
+            if (pair.phonetic) {
+                const phoneticCardElement = document.createElement('span');
+                phoneticCardElement.textContent = pair.phonetic;
+                phoneticCardElement.classList.add('phonetic-word-card'); // Add a class for styling
+                pairCard.appendChild(phoneticCardElement); // Add below target
+           }
   
             // Append English and Target words to the card
             pairCard.appendChild(englishElement);
@@ -244,36 +254,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Modified to accept the ENGLISH word and the TARGET word
-    function handleLearnWord(englishWord, targetWord, buttonElement) {
+    // Modified handleLearnWord to accept and process phoneticWord
+    function handleLearnWord(englishWord, targetWord, phoneticWord, buttonElement) {
         if (!targetWord || !targetWord.trim() || targetWord === '-' || targetWord === 'Translation failed') {
             console.warn("Attempted to learn an invalid target word:", targetWord);
             return;
         }
-         // Use a placeholder if English word is missing (e.g., from old data or suggestion)
-         const englishToSave = englishWord && englishWord.trim() ? englishWord.trim() : "(suggestion)";
+        const englishToSave = englishWord && englishWord.trim() ? englishWord.trim() : "(suggestion)";
+        // Ensure phoneticWord is null if empty string or just whitespace
+        const phoneticToSave = phoneticWord && phoneticWord.trim() ? phoneticWord.trim() : null;
 
-        console.log(`Attempting to learn pair: "${englishToSave}" -> "${targetWord}"`);
+        console.log(`Attempting to learn pair: "${englishToSave}" -> "${targetWord}" (Phonetic: ${phoneticToSave})`);
 
-        // Check if the TARGET word is already in the learned list
         const alreadyLearned = learnedWords.some(pair => pair.target === targetWord);
 
         if (!alreadyLearned) {
-            const newPair = { english: englishToSave, target: targetWord };
+            // Include phoneticToSave in the new pair object
+            const newPair = {
+                english: englishToSave,
+                target: targetWord,
+                phonetic: phoneticToSave // Save phonetic data
+            };
             learnedWords.push(newPair);
-            displayLearnedWords(); // Update UI
+            displayLearnedWords();
             console.log(`Added pair "${englishToSave}" -> "${targetWord}" to local learned list.`);
         } else {
             alert(`The word "${targetWord}" is already marked as learned.`);
-            // Re-enable the button immediately if already learned?
             if (buttonElement) {
                 buttonElement.disabled = false;
                 buttonElement.textContent = '✅ I learnt this!';
             }
-            return; // Don't proceed to open GitHub issue if already learned
+            return;
         }
 
-        // Disable the specific button that was clicked
         if (buttonElement) {
             buttonElement.disabled = true;
             buttonElement.textContent = 'Saving...';
@@ -296,16 +309,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     English: **${englishToSave}**
     Target (${langInfo.code}): **${targetWord}**
+    Phonetic: **${phoneticToSave || 'N/A'}**
 
     File to update: \`data/learned_${langInfo.filePrefix}.json\`
 
-    Make sure the JSON structure contains objects with "english" and "target" keys within the "words" array:
+    Make sure the JSON structure contains objects with "english", "target", and "phonetic" keys within the "words" array:
     \`\`\`json
     {
       "words": [
-        { "english": "existing_en_1", "target": "existing_target_1" },
-        { "english": "existing_en_2", "target": "existing_target_2" },
-        { "english": "${englishToSave}", "target": "${targetWord}" }
+        { "english": "existing_en_1", "target": "existing_target_1", "phonetic": "existing_pho_1" },
+        { "english": "existing_en_2", "target": "existing_target_2", "phonetic": null },
+        { "english": "${englishToSave}", "target": "${targetWord}", "phonetic": ${JSON.stringify(phoneticToSave)} }
       ]
     }
     \`\`\`
@@ -357,18 +371,18 @@ document.addEventListener('DOMContentLoaded', () => {
     iLearntThisBtn.addEventListener('click', (event) => {
         // For suggestions, we only have the target word (currentSuggestion)
         // We'll pass null or a placeholder for the English part
-        handleLearnWord("(suggestion)", currentSuggestion, event.currentTarget);
+        handleLearnWord("(suggestion)", currentSuggestion, null, event.currentTarget);
     });
 
-    // Learns the TRANSLATED word -> saving pair like { english: "InputText", target: "TranslatedText" }
+    // Modified listener for translation button to pass phonetic text
     learntTranslatedBtn.addEventListener('click', (event) => {
-        const englishWord = translateInput.value; // Get the original input
-        const targetWord = currentWordDisplay.textContent; // Get the translation result
-        handleLearnWord(englishWord, targetWord, event.currentTarget);
+        const englishWord = translateInput.value;
+        const targetWord = currentWordDisplay.textContent;
+        const phoneticWord = phoneticDisplayElement.textContent; // Get phonetic text
+        handleLearnWord(englishWord, targetWord, phoneticWord, event.currentTarget);
     });
 
     toggleLearnedBtn.addEventListener('click', () => {
-        // (Same as before)
         const isHidden = learnedWordsList.classList.toggle('hidden');
         toggleLearnedBtn.textContent = isHidden ? 'Show' : 'Hide';
     });

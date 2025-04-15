@@ -390,3 +390,10 @@ em {
   min-height: 1.2em; /* Reserve some space even when empty */
   font-style: italic; /* Optional: make it italic */
 }
+
+.phonetic-word-card {
+  font-size: 0.8em;
+  color: #888;
+  font-style: italic;
+  margin-top: 2px;
+}

@@ -31,12 +31,14 @@ jobs:
           LANG=$(echo "$TITLE" | grep -oP '\(\K[^)]+')
           ENGLISH_WORD=$(echo "$BODY" | grep -oP 'English: \*\*\K[^*]+')
           TARGET_WORD=$(echo "$BODY" | grep -oP 'Target \([^)]+\): \*\*\K[^*]+')
+          PHONETIC_WORD=$(echo "$BODY" | grep -oP 'Phonetic: \*\*\K[^*]+' || echo "")
           SAFE_TARGET_WORD=$(echo "$TARGET_WORD" | tr -cd '[:alnum:]_' | cut -c1-20)
           BRANCH="learned-${SAFE_TARGET_WORD:-word}-${RANDOM}"
 
           echo "Extracted Lang: $LANG"
           echo "Extracted English: $ENGLISH_WORD"
           echo "Extracted Target: $TARGET_WORD"
+          echo "Extracted Phonetic: $PHONETIC_WORD"
           echo "Branch Name: $BRANCH"
 
           if [ -z "$LANG" ] || [ -z "$ENGLISH_WORD" ] || [ -z "$TARGET_WORD" ]; then
@@ -47,6 +49,7 @@ jobs:
           echo "lang=$LANG" >> $GITHUB_OUTPUT
           echo "english_word=$ENGLISH_WORD" >> $GITHUB_OUTPUT
           echo "target_word=$TARGET_WORD" >> $GITHUB_OUTPUT
+          echo "phonetic_word=$PHONETIC_WORD" >> $GITHUB_OUTPUT
           echo "branch=$BRANCH" >> $GITHUB_OUTPUT
         shell: bash
 
@@ -60,6 +63,7 @@ jobs:
           FILE="data/learned_${{ steps.extract.outputs.lang }}.json"
           ENGLISH_WORD="${{ steps.extract.outputs.english_word }}"
           TARGET_WORD="${{ steps.extract.outputs.target_word }}"
+          PHONETIC_WORD="${{ steps.extract.outputs.phonetic_word }}"
 
           echo "Updating file: $FILE"
           mkdir -p data
@@ -69,9 +73,10 @@ jobs:
           fi
 
           # Add the object using jq (same logic as before)
-          jq --arg eng "$ENGLISH_WORD" --arg tgt "$TARGET_WORD" \
-             'if (.words | map(.target) | index($tgt)) == null then .words += [{"english": $eng, "target": $tgt}] else . end' \
-             "$FILE" > tmp.$$.json && mv tmp.$$.json "$FILE"
+          jq  --arg eng "$ENGLISH_WORD" \
+              --arg tgt "$TARGET_WORD" \
+              'if (.words | map(.target) | index($tgt)) == null then .words += [{"english": $eng, "target": $tgt}] else . end' \
+              "$FILE" > tmp.$$.json && mv tmp.$$.json "$FILE"
 
           echo "JSON file updated."
           git add "$FILE"
