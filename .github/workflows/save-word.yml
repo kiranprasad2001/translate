@@ -23,10 +23,12 @@ jobs:
         run: |
           LANG=$(echo "${{ github.event.issue.title }}" | cut -d':' -f2)
           WORD=$(echo "${{ github.event.issue.body }}" | sed -n "s/Add \\\"\\(.*\\)\\\" to.*/\\1/p")
-          BRANCH="learned-${LANG}-${RANDOM}"
+          SAFE_WORD=$(echo "$WORD" | tr -cd '[:alnum:]-' | cut -c1-20)
+          BRANCH="learned-${SAFE_WORD}-${RANDOM}"
           echo "lang=${LANG}" >> $GITHUB_OUTPUT
           echo "word=${WORD}" >> $GITHUB_OUTPUT
           echo "branch=${BRANCH}" >> $GITHUB_OUTPUT
+
 
       - name: Create and switch to new branch
         run: |

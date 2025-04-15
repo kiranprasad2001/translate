@@ -222,6 +222,11 @@ document.addEventListener('DOMContentLoaded', () => {
           displayLearnedWords(); // Update UI
       }
 
+      if (learnedWords.includes(currentSuggestion)) {
+        alert("You've already learned this word!");
+        return;
+      }
+
       // Disable button temporarily to prevent double clicks
       iLearntThisBtn.disabled = true;
       iLearntThisBtn.textContent = 'Saving...';
@@ -308,8 +313,11 @@ After editing the file, commit the change and push it to the main branch. The we
       const data = await res.json();
       const translated = data[0]?.[0]?.[0] || "Translation failed";
   
+      currentSuggestion = translated;                         // <-- enable 'i learnt this' for typed words
+      iLearntThisBtn.disabled = false;                        // <-- make the button clickable
       currentWordDisplay.textContent = translated;
       speak(translated, targetLangCode, languageMap[currentLanguage].voiceName);
+
     } catch (err) {
       console.error("Translation failed", err);
       currentWordDisplay.textContent = "Translation failed";
