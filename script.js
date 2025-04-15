@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Language Mapping ---
   // Maps dropdown values to BCP 47 language codes and potentially voice names
   const languageMap = {
-      'ch': { code: 'zh-CN', voiceName: 'Google 中文（普通话）', filePrefix: 'mandarin' }, // Common default
+      'ch': { code: 'zh-CN', voiceName: 'Google 中文（普通话）', filePrefix: 'ch' }, // Common default
       //'en': { code: 'en-US', voiceName: 'Google US English', filePrefix: 'en' }, // Common default
       'fr': { code: 'fr-FR', voiceName: 'Google Français', filePrefix: 'fr' }, // Common default
       'es': { code: 'es-ES', voiceName: 'Google Español', filePrefix: 'es' }, // Common default
