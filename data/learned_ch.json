@@ -14,6 +14,11 @@
       "english": "how are you",
       "target": "你好吗",
       "phonetic": "Nǐ hǎo ma"
+    },
+    {
+      "english": "Welcome",
+      "target": "欢迎",
+      "phonetic": "Huānyíng"
     }
   ]
 }
