@@ -2,7 +2,7 @@
 
 A simple, fun website hosted on GitHub Pages for kids (especially kindergarteners) to learn words in different languages using Text-to-Speech.
 
-**Live Site:** [https://translate.spotrot.com](https://translate.spotrot.com)
+**Live Site:** [https://translate.kiranic.com](https://translate.kiranic.com)
 
 ## Features
 
